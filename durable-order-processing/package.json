@@ -1,0 +1,17 @@
+{
+  "name": "durable-order-processing",
+  "version": "1.0.0",
+  "description": "Durable order processing workflow example",
+  "main": "index.mjs",
+  "type": "module",
+  "dependencies": {
+    "@aws/durable-execution-sdk-js": "^1.0.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "durable-functions",
+    "order-processing",
+    "e-commerce"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "LambdaDurableFunctionsStack-dev": {
+    "NodeJsApprovalWorkflowFunctionArn": "arn:aws:lambda:us-east-2:973918476207:function:durable-approval-workflow-dev",
+    "DurableFunctionRoleArn": "arn:aws:iam::973918476207:role/LambdaDurableFunctionsSta-DurableFunctionRoleBBDD8A-9qllCPYTk6tP",
+    "DeployedFunctions": "approval-workflow"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "aws-durable-execution-layer",
+  "version": "1.0.0",
+  "description": "AWS Lambda Layer for Durable Execution SDK",
+  "dependencies": {
+    "@aws/durable-execution-sdk-js": "^1.0.0"
+  }
+}

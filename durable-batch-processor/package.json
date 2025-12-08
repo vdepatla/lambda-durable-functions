@@ -1,0 +1,14 @@
+{
+  "name": "data-processing-lambda",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Data processing workflow with AWS Lambda durable execution",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "node index.mjs"
+  },
+  "dependencies": {
+    "@aws/durable-execution-sdk-js": "^1.0.0"
+  },
+  "keywords": ["aws", "lambda", "durable-execution", "data-processing"]
+}

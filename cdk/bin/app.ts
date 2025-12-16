@@ -10,7 +10,7 @@ const region = app.node.tryGetContext('region') || 'us-east-2';
 // Get functions to deploy from context
 // Can be a comma-separated string or an array
 const functionsContext = app.node.tryGetContext('functions');
-let functionsToDeploy: string[] = ['approval-workflow']; // Default
+let functionsToDeploy: string[] = ['order-processing']; // Default
 
 if (functionsContext) {
   if (typeof functionsContext === 'string') {
@@ -24,7 +24,7 @@ if (functionsContext) {
 
 // Special case: if 'all' is specified, deploy all available functions
 if (functionsToDeploy.includes('all')) {
-  functionsToDeploy = ['approval-workflow', 'order-processing', 'batch-processor'];
+  functionsToDeploy = ['order-processing'];
 }
 
 console.log(`Deploying functions: ${functionsToDeploy.join(', ')}`);

@@ -1,6 +1,6 @@
-# AWS Lambda Durable Functions Examples
+# AWS Lambda Durable Functions Example
 
-Examples of AWS Lambda Durable Functions using Node.js with CDK for infrastructure deployment.
+Example of AWS Lambda Durable Functions using Node.js with CDK for infrastructure deployment.
 
 ## Prerequisites
 
@@ -15,37 +15,21 @@ Examples of AWS Lambda Durable Functions using Node.js with CDK for infrastructu
 npm install
 cd cdk && npm install && cd ..
 
-# Deploy default function (approval workflow)
+# Deploy the order processing workflow
 npm run deploy
-
-# Deploy specific functions
-npx cdk deploy --context functions=order-processing
-npx cdk deploy --context functions="approval-workflow,batch-processor"
-npx cdk deploy --context functions=all
 ```
 
-**Available Functions:**
-- `approval-workflow` - Human-in-the-loop approval process
-- `order-processing` - E-commerce order workflow
-- `batch-processor` - Batch data processing
+## Order Processing Workflow
 
-## Examples
+This example demonstrates an e-commerce order processing workflow with validation, payment processing, and inventory management.
 
-### 1. Approval Workflow (`durable-approval-workflow`)
-Multi-step approval process with timeouts and conditional branching.
-
-**Test Event:**
-```json
-{
-  "requestId": "req-123",
-  "amount": 5000,
-  "requestType": "expense",
-  "submitter": "john.doe@company.com"
-}
-```
-
-### 2. Order Processing (`durable-order-processing`)
-E-commerce workflow with validation, payment processing, and inventory management.
+**Features:**
+- Order validation
+- Inventory checking
+- Payment processing
+- Inventory reservation
+- Order confirmation
+- Error simulation for testing checkpointing and replays
 
 **Test Event:**
 ```json
@@ -58,18 +42,11 @@ E-commerce workflow with validation, payment processing, and inventory managemen
 }
 ```
 
-### 3. Batch Processor (`durable-batch-processor`)
-Large-scale data processing with progress tracking.
-
-**Test Event:**
-```json
-{
-  "batchId": "batch-20241207-001",
-  "dataFiles": [
-    { "fileName": "customers.csv", "size": 1024000, "format": "csv" }
-  ]
-}
-```
+**Error Simulation:**
+To test checkpointing and replay functionality, use the error simulation test events:
+- `test-event-payment-error.json` - Simulates payment failure
+- `test-event-inventory-error.json` - Simulates inventory shortage
+- `test-event-timeout-error.json` - Simulates timeout errors
 
 ## Development
 
@@ -79,28 +56,17 @@ Large-scale data processing with progress tracking.
 npm run build
 npm run deploy
 
-# Deploy specific functions
-npx cdk deploy --context functions=order-processing
-npx cdk deploy --context functions=all
-
-# Environment deployment
-npx cdk deploy --context stage=prod --context region=us-west-2 --context functions=all
-
 # Cleanup
 npm run destroy
 ```
 
 ### Configuration
 - `stage`: Environment stage (default: `dev`)
-- `region`: AWS region (default: `us-east-2`) 
-- `functions`: Functions to deploy (default: `approval-workflow`)
 
 ## Monitoring
 
 **CloudWatch Logs:**
-- `/aws/lambda/durable-approval-workflow-{stage}`
 - `/aws/lambda/durable-order-processing-{stage}`
-- `/aws/lambda/durable-batch-processor-{stage}`
 
 **Features:**
 - Durable execution with checkpoints

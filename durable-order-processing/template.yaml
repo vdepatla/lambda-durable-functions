@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Order Processing Durable Function
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs22.x
+    MemorySize: 512
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        # Service URLs - can be overridden per environment
+        VALIDATION_SERVICE_URL: http://host.docker.internal:8080/api/v1/validate
+        INVENTORY_SERVICE_URL: http://host.docker.internal:8080/api/v1/inventory
+        PAYMENT_SERVICE_URL: http://host.docker.internal:8080/api/v1/payment
+        FULFILLMENT_SERVICE_URL: http://host.docker.internal:8080/api/v1/fulfillment
+        NOTIFICATION_SERVICE_URL: http://host.docker.internal:8080/api/v1/notification
+
+Resources:
+  OrderProcessingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-order-processing-local
+      CodeUri: ./
+      Handler: index.handler
+      Description: Durable order processing workflow
+      DurableConfig:
+        ExecutionTimeout: 3600    # 1 hour execution timeout
+        RetentionPeriodInDays: 7  # Keep execution history for 7 days
+      # Note: AWS SAM automatically configures durable execution permissions and runtime
+      # Environment variables and permissions are handled automatically by SAM
+
+Outputs:
+  OrderProcessingFunction:
+    Description: "Order Processing Lambda Function ARN"
+    Value: !GetAtt OrderProcessingFunction.Arn
+  OrderProcessingFunctionName:
+    Description: "Order Processing Lambda Function Name"
+    Value: !Ref OrderProcessingFunction

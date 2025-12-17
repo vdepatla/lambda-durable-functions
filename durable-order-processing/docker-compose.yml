@@ -1,0 +1,10 @@
+services:
+  go-resilience-mock:
+    image: arun0009/go-resilience-mock:latest
+    platform: linux/amd64
+    ports:
+      - "8080:8080"
+    command: ["/go-resilience-mock", "--config", "/app/scenarios.yaml", "--verbose"]
+    volumes:
+      - ./scenarios.yaml:/app/scenarios.yaml
+    working_dir: /app

@@ -107,6 +107,13 @@ pids
 cdk.out/
 cdk.context.json
 
+# AWS SAM
+.aws-sam/
+samconfig.toml
+
+# AWS Lambda Durable Functions local execution data
+.durable-executions-local/
+
 # CDK asset staging directory
 .cdk.staging
 cdk.out
@@ -169,6 +176,11 @@ bootstrap-template.yaml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # Local test files
 response.json

@@ -1,0 +1,100 @@
+# Order validation endpoint
+- path: /api/v1/validate
+  method: POST
+  responses:
+    - status: 200
+      delay: 200ms
+      body: |
+        {
+          "valid": true,
+          "orderId": "test-123",
+          "message": "Order validation successful"
+        }
+
+# Inventory check endpoint
+- path: /api/v1/inventory
+  method: POST
+  responses:
+    - status: 200
+      delay: 300ms
+      body: |
+        {
+          "inventoryChecks": [
+            {
+              "productId": "prod-1",
+              "requestedQuantity": 2,
+              "availableQuantity": 10,
+              "sufficient": true
+            }
+          ],
+          "checkedAt": "2025-12-17T01:00:00Z"
+        }
+
+# Payment processing endpoint
+- path: /api/v1/payment
+  method: POST
+  responses:
+    - status: 200
+      delay: 500ms
+      body: |
+        {
+          "success": true,
+          "transactionId": "txn-123",
+          "amount": 100.00,
+          "currency": "USD",
+          "status": "approved"
+        }
+
+# Inventory reservation endpoint
+- path: /api/v1/inventory/reserve
+  method: POST
+  responses:
+    - status: 200
+      delay: 400ms
+      body: |
+        {
+          "reservations": [
+            {
+              "productId": "prod-1",
+              "quantity": 2,
+              "reservationId": "res-123"
+            }
+          ]
+        }
+
+# Fulfillment endpoint
+- path: /api/v1/fulfillment
+  method: POST
+  responses:
+    - status: 200
+      delay: 700ms
+      body: |
+        {
+          "fulfillmentOrderId": "fulfill-123",
+          "status": "created"
+        }
+
+# Notification endpoint
+- path: /api/v1/notification
+  method: POST
+  responses:
+    - status: 200
+      delay: 300ms
+      body: |
+        {
+          "notificationId": "notif-123",
+          "status": "sent"
+        }
+
+# Health check endpoint
+- path: /health
+  method: GET
+  responses:
+    - status: 200
+      delay: 50ms
+      body: |
+        {
+          "status": "healthy",
+          "timestamp": "2025-12-17T01:00:00Z",
+          "version": "1.0.0"
+        }

@@ -54,48 +54,26 @@ export const handler = withDurableExecution(
       const validationResult = await context.step(async (stepContext) => {
         stepContext.logger.info(`Validating order ${orderId}`);
         
-        if (!items || items.length === 0) {
-          throw new Error("Order must contain at least one item");
-        }
+        // Call validation service
+        const validationResponse = await callExternalService(SERVICE_URLS.VALIDATION_SERVICE_URL, {
+          orderId,
+          items,
+          customerEmail: event.customerEmail || "customer@example.com"
+        });
         
-        try {
-          // Call validation service
-          const validationResponse = await callExternalService(SERVICE_URLS.VALIDATION_SERVICE_URL, {
-            orderId,
-            items,
-            customerEmail: event.customerEmail || "customer@example.com"
-          });
-          
-          console.log('Validation service response:', validationResponse);
-          
-          if (validationResponse && !validationResponse.valid) {
-            throw new Error(validationResponse.error || "Order validation failed");
-          }
-        } catch (error) {
-          console.warn('Validation service unavailable, using fallback validation:', error.message);
-        }
+        console.log('Validation service response:', validationResponse);
         
-        // Validate each item locally as backup
-        for (const item of items) {
-          if (!item.productId || !item.quantity || !item.price) {
-            throw new Error(`Invalid item: ${JSON.stringify(item)}`);
-          }
-          if (item.quantity <= 0) {
-            throw new Error(`Invalid quantity for product ${item.productId}`);
-          }
-          if (item.price <= 0) {
-            throw new Error(`Invalid price for product ${item.productId}`);
-          }
+        if (!validationResponse || !validationResponse.valid) {
+          throw new Error(validationResponse?.error || "Order validation failed");
         }
-        
-        const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
         
         return { 
           orderId, 
           status: "validated", 
           itemCount: items.length,
-          totalAmount: totalAmount.toFixed(2),
-          validatedAt: new Date().toISOString()
+          totalAmount: validationResponse.totalAmount || "0.00",
+          validatedAt: new Date().toISOString(),
+          source: "validation_service"
         };
       });
       
@@ -105,64 +83,33 @@ export const handler = withDurableExecution(
       const inventoryResult = await context.step(async (stepContext) => {
         stepContext.logger.info(`Checking inventory for order ${orderId}`);
         
-        try {
-          // Call inventory service
-          const inventoryResponse = await callExternalService(SERVICE_URLS.INVENTORY_SERVICE_URL, {
-            orderId,
-            items: items.map(item => ({
-              productId: item.productId,
-              requestedQuantity: item.quantity
-            }))
-          });
-          
-          console.log('Inventory service response:', inventoryResponse);
-          
-          // Use service response if available
-          if (inventoryResponse && inventoryResponse.inventoryChecks) {
-            // Check if any items are insufficient
-            const insufficientItems = inventoryResponse.inventoryChecks.filter(check => !check.sufficient);
-            if (insufficientItems.length > 0) {
-              throw new Error(`Insufficient inventory for products: ${insufficientItems.map(item => item.productId).join(', ')}`);
-            }
-            
-            return {
-              orderId,
-              status: "inventory_checked",
-              inventoryChecks: inventoryResponse.inventoryChecks,
-              checkedAt: new Date().toISOString(),
-              source: "inventory_service"
-            };
-          }
-        } catch (error) {
-          console.warn('Inventory service unavailable, using fallback inventory check:', error.message);
+        // Call inventory service
+        const inventoryResponse = await callExternalService(SERVICE_URLS.INVENTORY_SERVICE_URL, {
+          orderId,
+          items: items.map(item => ({
+            productId: item.productId,
+            requestedQuantity: item.quantity
+          }))
+        });
+        
+        console.log('Inventory service response:', inventoryResponse);
+        
+        if (!inventoryResponse || !inventoryResponse.inventoryChecks) {
+          throw new Error('Invalid inventory service response');
         }
         
-        // Fallback inventory simulation
-        const inventoryChecks = [];
-        
-        for (const item of items) {
-          // Simulate inventory check (95% success rate)
-          const available = Math.random() > 0.05;
-          const availableQuantity = available ? item.quantity + Math.floor(Math.random() * 10) : 0;
-          
-          inventoryChecks.push({
-            productId: item.productId,
-            requestedQuantity: item.quantity,
-            availableQuantity,
-            sufficient: available && availableQuantity >= item.quantity
-          });
-          
-          if (!available || availableQuantity < item.quantity) {
-            throw new Error(`Insufficient inventory for product ${item.productId}. Requested: ${item.quantity}, Available: ${availableQuantity}`);
-          }
+        // Check if any items are insufficient
+        const insufficientItems = inventoryResponse.inventoryChecks.filter(check => !check.sufficient);
+        if (insufficientItems.length > 0) {
+          throw new Error(`Insufficient inventory for products: ${insufficientItems.map(item => item.productId).join(', ')}`);
         }
         
         return {
           orderId,
           status: "inventory_checked",
-          inventoryChecks,
+          inventoryChecks: inventoryResponse.inventoryChecks,
           checkedAt: new Date().toISOString(),
-          source: "fallback_simulation"
+          source: "inventory_service"
         };
       });
       
@@ -186,7 +133,6 @@ export const handler = withDurableExecution(
           
           console.log('Payment service response:', paymentResponse);
           
-          // Use service response if available and successful
           if (paymentResponse && paymentResponse.success) {
             return {
               orderId,
@@ -200,30 +146,13 @@ export const handler = withDurableExecution(
             };
           } else if (paymentResponse && !paymentResponse.success) {
             throw new Error(paymentResponse.error || "Payment processing failed");
+          } else {
+            throw new Error("Invalid payment service response");
           }
         } catch (error) {
-          console.warn('Payment service unavailable, using fallback payment processing:', error.message);
+          console.error('Payment service failed:', error.message);
+          throw new Error(`Payment processing failed: ${error.message}`);
         }
-        
-        // Fallback payment simulation (90% success rate)
-        const paymentSuccessful = Math.random() > 0.1;
-        
-        if (!paymentSuccessful) {
-          throw new Error("Payment processing failed");
-        }
-        
-        const transactionId = `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        return {
-          orderId,
-          status: "payment_processed",
-          transactionId,
-          amount: totalAmount,
-          currency: "USD",
-          paymentMethod: "credit_card",
-          processedAt: new Date().toISOString(),
-          source: "fallback_simulation"
-        };
       });
       
       console.log(`Payment processing completed:`, paymentResult);
@@ -252,26 +181,13 @@ export const handler = withDurableExecution(
               reservedAt: new Date().toISOString(),
               source: "inventory_service"
             };
+          } else {
+            throw new Error("Invalid inventory reservation service response");
           }
         } catch (error) {
-          console.warn('Inventory reservation service unavailable, using fallback reservation:', error.message);
+          console.error('Inventory reservation service failed:', error.message);
+          throw new Error(`Inventory reservation failed: ${error.message}`);
         }
-        
-        // Fallback reservation simulation
-        const reservations = items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          reservationId: `res-${Date.now()}-${item.productId}`,
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-        }));
-        
-        return {
-          orderId,
-          status: "inventory_reserved",
-          reservations,
-          reservedAt: new Date().toISOString(),
-          source: "fallback_simulation"
-        };
       });
       
       console.log(`Inventory reservation completed:`, reservationResult);
@@ -299,22 +215,13 @@ export const handler = withDurableExecution(
               createdAt: new Date().toISOString(),
               source: "fulfillment_service"
             };
+          } else {
+            throw new Error("Invalid fulfillment service response");
           }
         } catch (error) {
-          console.warn('Fulfillment service unavailable, using fallback fulfillment:', error.message);
+          console.error('Fulfillment service failed:', error.message);
+          throw new Error(`Fulfillment order creation failed: ${error.message}`);
         }
-        
-        // Fallback fulfillment simulation
-        const estimatedDelivery = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 5 days from now
-        
-        return {
-          orderId,
-          status: "fulfillment_created",
-          fulfillmentOrderId: `fulfill-${Date.now()}`,
-          estimatedDelivery: estimatedDelivery.toISOString(),
-          createdAt: new Date().toISOString(),
-          source: "fallback_simulation"
-        };
       });
       
       console.log(`Fulfillment order created:`, fulfillmentResult);
@@ -349,21 +256,13 @@ export const handler = withDurableExecution(
               sentAt: new Date().toISOString(),
               source: "notification_service"
             };
+          } else {
+            throw new Error("Invalid notification service response");
           }
         } catch (error) {
-          console.warn('Notification service unavailable, using fallback notification:', error.message);
+          console.error('Notification service failed:', error.message);
+          throw new Error(`Notification sending failed: ${error.message}`);
         }
-        
-        // Fallback notification
-        return {
-          orderId,
-          status: "notification_sent",
-          notificationType: "email",
-          recipient: event.customerEmail || "customer@example.com",
-          message: `Your order ${orderId} has been confirmed and will be delivered by ${new Date(fulfillmentResult.estimatedDelivery).toLocaleDateString()}`,
-          sentAt: new Date().toISOString(),
-          source: "fallback_simulation"
-        };
       });
       
       console.log(`Order confirmation sent:`, notificationResult);

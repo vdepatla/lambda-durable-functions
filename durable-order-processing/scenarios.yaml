@@ -8,6 +8,7 @@
         {
           "valid": true,
           "orderId": "test-123",
+          "totalAmount": "149.97",
           "message": "Order validation successful"
         }
 
@@ -71,6 +72,7 @@
       body: |
         {
           "fulfillmentOrderId": "fulfill-123",
+          "estimatedDelivery": "2025-12-24T00:00:00Z",
           "status": "created"
         }
 
